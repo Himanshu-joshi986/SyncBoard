@@ -20,4 +20,26 @@ router.get('/events', async (_req, res) => {
   }
 });
 
+// Minimal endpoint to create a new event/task
+router.post('/events', async (req, res) => {
+  try {
+    const { date, summary } = req.body;
+    if (!date || !summary) return res.status(400).json({ error: 'Missing date or summary' });
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    const event = {
+      summary,
+      start: { date },
+      end: { date }
+    };
+    const { data } = await calendar.events.insert({
+      calendarId: 'primary',
+      resource: event
+    });
+    res.json(data);
+  } catch (err) {
+    console.error('Calendar create error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
