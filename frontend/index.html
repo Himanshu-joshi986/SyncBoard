@@ -3,11 +3,367 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SyncBoard Minimal Frontend</title>
+    <title>SyncBoard Minimal Task Manager</title>
   </head>
   <body>
-    <div id="root"></div>
-    <script src="App.js" type="module"></script>
-    <p>Hi there</p>
+  <!-- Spline viewer as interactive foreground element -->
+  <script type="module" src="https://unpkg.com/@splinetool/viewer/build/spline-viewer.js"></script>
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.10.53/build/spline-viewer.js"></script>
+
+  <div style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-2;overflow:hidden;">
+    <spline-viewer url="https://prod.spline.design/PnCadtomQ1o5jCZx/scene.splinecode" style="width:100vw;height:100vh;"></spline-viewer>
+  </div>
+
+  <div style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;overflow:hidden;">
+    <spline-viewer url="https://prod.spline.design/PBQQBw8bfXDhBo7w/scene.splinecode" events-target="global" style="width:100vw;height:100vh;"></spline-viewer>
+  </div>
+
+  <style>
+    #spline-bg iframe {
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      filter: blur(0.5px) brightness(0.7);
+    }
+    body {
+      background: #181818 ;
+      color: #f1f1f1;
+      font-family:  'Times New Roman','Segoe UI', Times, serif, sans-serif;
+      margin: 3;
+      min-height: 100vh;
+      transition: background 0.3s;
+    }
+    #root > div {
+      background: #727f9a81;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px #000a;
+      padding: 2rem;
+      margin-top: 2rem;
+      animation: fadeIn 1.5s;
+      opacity: 0.9;
+    }
+
+    h2, h3 {
+      color: #ffb86c;
+      text-shadow: 0 2px 8px rgba(176, 14, 195, 0.811);
+      letter-spacing: 1px;
+    }
+
+    input, button {
+      background: #6c2a7e93;
+      color: #f1f1f1;
+      border: none;
+      border-radius: 6px;
+      padding: 0.5em 1em;
+      margin: 0.2em;
+      font-size: 1em;
+      transition: box-shadow 0.3s, background 0.3s;
+    }
+
+    input:focus, button:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px #ffb86c;
+    }
+
+    button {
+      cursor: pointer;
+      background: linear-gradient(90deg, #ffb86c 0%, #d782cecd 100%);
+      color: #23272f;
+      font-weight: bold;
+      box-shadow: 0 2px 8px #0005;
+      transition: transform 0.2s;
+    }
+
+    button:hover {
+      transform: scale(1.07);
+      background: linear-gradient(90deg, #d782cecd 0%, #ffb86c 100%);
+      transition: transform 0.5s;
+      
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background: #282c34;
+      margin: 0.3em 0;
+      padding: 0.5em 1em;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px #0003;
+      animation: fadeInUp 0.7s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+  </style>
+
+
+  <div id="root"></div>
+    <!-- React and ReactDOM from CDN for minimal setup -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <!-- Babel for JSX support in browser (for development only) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- All React code in one file for direct browser execution -->
+    <script type="text/babel">
+
+
+  const API = "http://localhost:5000";
+  const USER_API = API + "/api/users";
+  const TASK_API = API + "/api/tasks";
+
+    function RegisterUser() {
+      const [email, setEmail] = React.useState("");
+      const [name, setName] = React.useState("");
+      const [msg, setMsg] = React.useState("");
+      const handleRegister = async (e) => {
+        e.preventDefault();
+        const res = await fetch(`${USER_API}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, name })
+        });
+        setMsg(res.ok ? "Registered!" : "Error");
+      };
+      return (
+        <div><h3>Register User</h3>
+          <form onSubmit={handleRegister}>
+            <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" required />
+            <input value={name} onChange={e=>setName(e.target.value)} placeholder="Name" required />
+            <button type="submit">Register</button>
+          </form>
+          <div>{msg}</div>
+        </div>
+      );
+    }
+
+    function FriendRequests() {
+      const [email, setEmail] = React.useState("");
+      const [friendEmail, setFriendEmail] = React.useState("");
+      const [pending, setPending] = React.useState([]);
+      const [msg, setMsg] = React.useState("");
+
+      const sendRequest = async (e) => {
+        e.preventDefault();
+        const res = await fetch(`${USER_API}/${email}/send-request`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ friendEmail })
+        });
+        const data = await res.json();
+        setMsg(res.ok ? (data.message || "Request sent") : (data.error || "Error"));
+      };
+
+      const fetchPending = async () => {
+        const res = await fetch(`${USER_API}/${email}/requests`);
+        const data = await res.json();
+        if (res.ok) {
+          setPending(data);
+          setMsg("");
+        } else {
+          setPending([]);
+          setMsg(data.error || "Error fetching requests");
+        }
+      };
+
+      const accept = async (requesterEmail) => {
+        const res = await fetch(`${USER_API}/${email}/accept-request`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requesterEmail })
+        });
+        const data = await res.json();
+        setMsg(res.ok ? (data.message || "Accepted") : (data.error || "Error"));
+        fetchPending();
+      };
+      const reject = async (requesterEmail) => {
+        const res = await fetch(`${USER_API}/${email}/reject-request`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requesterEmail })
+        });
+        const data = await res.json();
+        setMsg(res.ok ? (data.message || "Rejected") : (data.error || "Error"));
+        fetchPending();
+      };
+
+      return (
+        <div><h3>Friend Requests</h3>
+          <form onSubmit={sendRequest}>
+            <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Your Email" required />
+            <input value={friendEmail} onChange={e=>setFriendEmail(e.target.value)} placeholder="Friend Email" required />
+            <button type="submit">Send Request</button>
+          </form>
+          <button onClick={fetchPending}>Show Pending Requests</button>
+          <ul>
+            {pending.map(r => (
+              <li key={r.email}>{r.email} {r.name}
+                <button onClick={()=>accept(r.email)}>Accept</button>
+                <button onClick={()=>reject(r.email)}>Reject</button>
+              </li>
+            ))}
+          </ul>
+          <div>{msg}</div>
+        </div>
+      );
+    }
+
+    function FriendsList() {
+      const [email, setEmail] = React.useState("");
+      const [friends, setFriends] = React.useState([]);
+      const [msg, setMsg] = React.useState("");
+      const fetchFriends = async () => {
+        const res = await fetch(`${USER_API}/${email}/friends`);
+        const data = await res.json();
+        if (res.ok) {
+          setFriends(data);
+          setMsg("");
+        } else {
+          setFriends([]);
+          setMsg(data.error || "Error fetching friends");
+        }
+      };
+      return (
+        <div><h3>Friends List</h3>
+          <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Your Email" />
+          <button onClick={fetchFriends}>Show Friends</button>
+          <ul>
+            {friends.map(f => (
+              <li key={f.email}>{f.email} {f.name}</li>
+            ))}
+          </ul>
+          <div>{msg}</div>
+        </div>
+      );
+    }
+
+    function TaskManager() {
+      const [email, setEmail] = React.useState("");
+      const [task, setTask] = React.useState("");
+      const [date, setDate] = React.useState("");
+      const [tasks, setTasks] = React.useState([]);
+      const [msg, setMsg] = React.useState("");
+
+      const createTask = async (e) => {
+        e.preventDefault();
+        const res = await fetch(`${TASK_API}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, task, date })
+        });
+        setMsg(res.ok ? "Task created" : "Error");
+        fetchTasks();
+      };
+
+      const fetchTasks = async () => {
+        const res = await fetch(`${TASK_API}/${email}`);
+        const data = await res.json();
+        setTasks(data);
+      };
+
+      const deleteTask = async (id) => {
+        await fetch(`${TASK_API}/${id}`, { method: "DELETE" });
+        fetchTasks();
+      };
+
+      return (
+        <div><h3>Task Manager</h3>
+          <form onSubmit={createTask}>
+            <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Your Email" required />
+            <input value={task} onChange={e=>setTask(e.target.value)} placeholder="Task" required />
+            <input type="date" value={date} onChange={e=>setDate(e.target.value)} required />
+            <button type="submit">Add Task</button>
+          </form>
+          <button onClick={fetchTasks}>Show My Tasks</button>
+          <ul>
+            {tasks.map(t => (
+              <li key={t._id}>{t.date?.slice(0,10)}: {t.task} <button onClick={()=>deleteTask(t._id)}>Delete</button></li>
+            ))}
+          </ul>
+          <div>{msg}</div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [view, setView] = React.useState("main");
+      return (
+        <div style={{ fontFamily: "sans-serif", maxWidth: 700, margin: "2rem auto" }}>
+
+
+
+          <header style={{
+            textAlign: "center",
+            padding: "1.5em 0 1em 0",
+            marginBottom: "1em",
+            background: "#2d142e",
+            borderRadius: "16px 16px 0 0",
+            boxShadow: "0 2px 8px #0005"
+          }}>
+            <span style={{ fontSize: "2.2em", fontWeight: "bold", color: "#ffb86c", letterSpacing: "2px", textShadow: "0 2px 8px #000a" }}>
+              SyncBoard
+            </span>
+            <span style={{ display: "block", color: "#f1f1f1", fontSize: "1em", marginTop: "0.5em", fontStyle: "italic" }}>
+              Plan, share, and sync your tasks with friends
+            </span>
+          </header>
+
+
+
+          <nav style={{
+            display: "flex", justifyContent: "center", gap: "1em", marginBottom: "2em",
+            background: "#23272f", borderRadius: "12px", boxShadow: "0 2px 8px #0005", padding: "1em"
+          }}>
+            <button onClick={() => setView("main")}>Home</button>
+            <button onClick={() => setView("tasks")}>Task Manager</button>
+          </nav>
+          {view === "main" && (
+            <>
+              <h2>SyncBoard Minimal Frontend</h2>
+              <p>Welcome to SyncBoard, your personal Sync-Partner.</p>
+              <RegisterUser />
+              <FriendRequests />
+              <FriendsList />
+            </>
+          )}
+          {view === "tasks" && (
+            <div style={{ animation: "fadeIn 0.7s" }}>
+              <h2>Task Manager</h2>
+              <TaskManager />
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById("root"));
+    </script>
+
+
+    <!-- footer -->
+    <footer style="width:100%;text-align:center;padding:2em 0 1em 0;">
+      <div style="color:#2d142e;font-size:1.1em;margin-bottom:0.5em;font-style:italic;">
+        "The best way to get started is to quit talking and begin doing." – Walt Disney
+      </div>
+      <a href="https://github.com/Himanshu-joshi986/SyncBoard" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;">
+        <button style="background:#23272f;color:#ffb86c;border:1px solid #ffb86c;padding:0.5em 1.2em;border-radius:8px;font-size:1em;cursor:pointer;transition:background 0.3s, color 0.3s;">
+          <svg height="20" viewBox="0 0 16 16" fill="#ffb86c" style="vertical-align:middle;margin-right:8px;"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.19 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg>
+          GitHub
+        </button>
+      </a>
+    </footer>
+
+
+
   </body>
 </html>
