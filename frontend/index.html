@@ -118,7 +118,11 @@
     <script type="text/babel">
 
 
-  const API = "http://localhost:5000";
+  const API =
+  location.hostname === "localhost"
+    ? "http://localhost:5000"
+    : "https://syncboard-024s.onrender.com"; 
+
   const USER_API = API + "/api/users";
   const TASK_API = API + "/api/tasks";
 
