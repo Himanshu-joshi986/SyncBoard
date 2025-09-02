@@ -6,7 +6,10 @@ require("dotenv").config();
 const app = express();
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'https://sync-board-lake.vercel.app'],
+  credentials: true
+}));
 app.use(express.json());
 
 // ✅ Import routes

@@ -132,12 +132,21 @@
       const [msg, setMsg] = React.useState("");
       const handleRegister = async (e) => {
         e.preventDefault();
-        const res = await fetch(`${USER_API}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, name })
-        });
-        setMsg(res.ok ? "Registered!" : "Error");
+        try {
+          console.log("Sending registration request to:", USER_API);
+          const res = await fetch(`${USER_API}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, name }),
+            credentials: "include"
+          });
+          const data = await res.json().catch(() => ({}));
+          console.log("Registration response:", { status: res.status, ok: res.ok, data });
+          setMsg(res.ok ? "Registered!" : `Error: ${data.error || res.status}`);
+        } catch (err) {
+          console.error("Registration error:", err);
+          setMsg(`Connection error: ${err.message}`);
+        }
       };
       return (
         <div><h3>Register User</h3>
@@ -159,17 +168,27 @@
 
       const sendRequest = async (e) => {
         e.preventDefault();
-        const res = await fetch(`${USER_API}/${email}/send-request`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ friendEmail })
-        });
-        const data = await res.json();
-        setMsg(res.ok ? (data.message || "Request sent") : (data.error || "Error"));
+        try {
+          console.log("Sending friend request to:", `${USER_API}/${email}/send-request`);
+          const res = await fetch(`${USER_API}/${email}/send-request`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ friendEmail }),
+            credentials: "include"
+          });
+          const data = await res.json().catch(() => ({}));
+          console.log("Friend request response:", { status: res.status, ok: res.ok, data });
+          setMsg(res.ok ? (data.message || "Request sent") : `Error: ${data.error || res.status}`);
+        } catch (err) {
+          console.error("Friend request error:", err);
+          setMsg(`Connection error: ${err.message}`);
+        }
       };
 
       const fetchPending = async () => {
-        const res = await fetch(`${USER_API}/${email}/requests`);
+        const res = await fetch(`${USER_API}/${email}/requests`, {
+          credentials: "include"
+        });
         const data = await res.json();
         if (res.ok) {
           setPending(data);
@@ -184,7 +203,8 @@
         const res = await fetch(`${USER_API}/${email}/accept-request`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ requesterEmail })
+          body: JSON.stringify({ requesterEmail }),
+          credentials: "include"
         });
         const data = await res.json();
         setMsg(res.ok ? (data.message || "Accepted") : (data.error || "Error"));
@@ -194,7 +214,8 @@
         const res = await fetch(`${USER_API}/${email}/reject-request`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ requesterEmail })
+          body: JSON.stringify({ requesterEmail }),
+          credentials: "include"
         });
         const data = await res.json();
         setMsg(res.ok ? (data.message || "Rejected") : (data.error || "Error"));
@@ -227,7 +248,9 @@
       const [friends, setFriends] = React.useState([]);
       const [msg, setMsg] = React.useState("");
       const fetchFriends = async () => {
-        const res = await fetch(`${USER_API}/${email}/friends`);
+        const res = await fetch(`${USER_API}/${email}/friends`, {
+          credentials: "include"
+        });
         const data = await res.json();
         if (res.ok) {
           setFriends(data);
@@ -263,20 +286,26 @@
         const res = await fetch(`${TASK_API}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, task, date })
+          body: JSON.stringify({ email, task, date }),
+          credentials: "include"
         });
         setMsg(res.ok ? "Task created" : "Error");
         fetchTasks();
       };
 
       const fetchTasks = async () => {
-        const res = await fetch(`${TASK_API}/${email}`);
+        const res = await fetch(`${TASK_API}/${email}`, {
+          credentials: "include"
+        });
         const data = await res.json();
         setTasks(data);
       };
 
       const deleteTask = async (id) => {
-        await fetch(`${TASK_API}/${id}`, { method: "DELETE" });
+        await fetch(`${TASK_API}/${id}`, { 
+          method: "DELETE",
+          credentials: "include"
+        });
         fetchTasks();
       };
 
